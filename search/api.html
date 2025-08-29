@@ -7,7 +7,7 @@
 <script>
 const config = {
   searchURL: 'https://searchcloud-1-us-east-1.searchstax.com/29847/tutorialqacrawlerapi-5641/emselect',
-  authHeader: 'Token 9a6f1b606dc700b4af156713a8b6f13a425558b0'
+  authHeader: '9a6f1b606dc700b4af156713a8b6f13a425558b0'
 };
 
 document.getElementById('go').addEventListener('click', async () => {
@@ -31,6 +31,7 @@ document.getElementById('go').addEventListener('click', async () => {
 });
 
 const suggestURL = 'https://searchcloud-1-us-east-1.searchstax.com/29847/tutorialqacrawlerapi-5641_suggester/emsuggest';
+const token = '9a6f1b606dc700b4af156713a8b6f13a425558b0'; // omit the header if your suggester is public
 
 const input = document.getElementById('q');
 const box = document.createElement('ul');
