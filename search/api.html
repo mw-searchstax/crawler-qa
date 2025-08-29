@@ -19,7 +19,7 @@ document.getElementById('go').addEventListener('click', async () => {
   url.searchParams.set('q', q);
 
   const resp = await fetch(url.toString(), {
-    headers: { Authorization: config.authHeader, Accept: 'application/json' }
+    headers: { Authorization: `Token ${config.authHeader}`, Accept: 'application/json' }
   });
   const data = await resp.json();
 
@@ -53,7 +53,7 @@ input.addEventListener('input', () => {
       // u.searchParams.set('suggest.q', term);     // if your handler expects Solr-style, swap to this
 
       const r = await fetch(u.toString(), {
-        headers: { Authorization: config.authHeader, Accept: 'application/json' }
+        headers: { Authorization: `Token ${config.authHeader}`, Accept: 'application/json' }
       });
       if (!r.ok) throw new Error(`Suggest HTTP ${r.status}`);
       const s = await r.json();
