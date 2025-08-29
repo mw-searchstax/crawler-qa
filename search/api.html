@@ -3,6 +3,7 @@
   <button id="go">Search</button>
   <ul id="results"></ul>
 </div>
+
 <script>
 const config = {
   searchURL: 'https://searchcloud-1-us-east-1.searchstax.com/29847/tutorialqacrawlerapi-5641/emselect',
@@ -27,5 +28,40 @@ document.getElementById('go').addEventListener('click', async () => {
     li.textContent = title || doc.name || doc.url || '(untitled)';
     list.appendChild(li);
   });
+});
+
+const suggestURL = 'https://searchcloud-1-us-east-1.searchstax.com/29847/tutorialqacrawlerapi-5641_suggester/emsuggest';
+const token = 'Token 9a6f1b606dc700b4af156713a8b6f13a425558b0'; // omit the header if your suggester is public
+
+const input = document.getElementById('q');
+const box = document.createElement('ul');
+input.after(box);
+
+let timer;
+input.addEventListener('input', () => {
+  clearTimeout(timer);
+  const term = input.value.trim();
+  if (!term) { box.innerHTML = ''; return; }
+
+  timer = setTimeout(async () => {
+    const u = new URL(suggestURL);
+    u.searchParams.set('q', term);
+    const r = await fetch(u, { headers: { Authorization: `Token ${token}` } });
+    const s = await r.json();
+
+    // Auto‑Suggest response shape: s.suggest[<dictionary>][<term>].suggestions[]
+    const dictObj = s.suggest || {};
+    const firstDict = Object.keys(dictObj)[0];
+    const entry = firstDict ? (dictObj[firstDict][term] || dictObj[firstDict][term.toLowerCase()] || {}) : {};
+    const items = (entry.suggestions || []).map(x => x.term);
+
+    box.innerHTML = '';
+    items.forEach(text => {
+      const li = document.createElement('li');
+      li.textContent = text;
+      li.onclick = () => { input.value = text; };
+      box.appendChild(li);
+    });
+  }, 120);
 });
 </script>
