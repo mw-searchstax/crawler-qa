@@ -1,0 +1,31 @@
+<div id="search">
+  <input id="q" placeholder="Search" />
+  <button id="go">Search</button>
+  <ul id="results"></ul>
+</div>
+<script>
+const config = {
+  searchURL: 'https://searchcloud-1-us-east-1.searchstax.com/29847/tutorialqacrawlerapi-5641/emselect',
+  authHeader: 'Token 9a6f1b606dc700b4af156713a8b6f13a425558b0'
+};
+
+document.getElementById('go').addEventListener('click', async () => {
+  const q = document.getElementById('q').value.trim();
+  const url = new URL(config.searchURL);
+  url.searchParams.set('q', q);
+  const resp = await fetch(url.toString(), {
+    headers: { Authorization: config.authHeader }
+  });
+  const data = await resp.json();
+
+  const docs = data.response?.docs || [];
+  const list = document.getElementById('results');
+  list.innerHTML = '';
+  docs.forEach(doc => {
+    const li = document.createElement('li');
+    const title = Array.isArray(doc.title) ? doc.title[0] : doc.title;
+    li.textContent = title || doc.name || doc.url || '(untitled)';
+    list.appendChild(li);
+  });
+});
+</script>
