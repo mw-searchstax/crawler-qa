@@ -1,21 +1,19 @@
-<div id="search">
-  <input id="q" placeholder="Search" />
-  <button id="go">Search</button>
-  <ul id="results"></ul>
-</div>
-
 <script>
 const config = {
   searchURL: 'https://searchcloud-1-us-east-1.searchstax.com/29847/tutorialqacrawlerapi-5641/emselect',
-  authHeader: '9a6f1b606dc700b4af156713a8b6f13a425558b0'
+  suggestURL: 'https://searchcloud-1-us-east-1.searchstax.com/29847/tutorialqacrawlerapi-5641_suggester/emsuggest',
+  authHeader: '9a6f1b606dc700b4af156713a8b6f13a425558b0' // use the SAME value for both calls
 };
 
+// Search
 document.getElementById('go').addEventListener('click', async () => {
   const q = document.getElementById('q').value.trim();
+  if (!q) return;
   const url = new URL(config.searchURL);
   url.searchParams.set('q', q);
+
   const resp = await fetch(url.toString(), {
-    headers: { Authorization: config.authHeader }
+    headers: { Authorization: config.authHeader, Accept: 'application/json' }
   });
   const data = await resp.json();
 
@@ -30,11 +28,10 @@ document.getElementById('go').addEventListener('click', async () => {
   });
 });
 
-const suggestURL = 'https://searchcloud-1-us-east-1.searchstax.com/29847/tutorialqacrawlerapi-5641_suggester/emsuggest';
-const token = '9a6f1b606dc700b4af156713a8b6f13a425558b0'; // omit the header if your suggester is public
-
+// Auto-suggest
 const input = document.getElementById('q');
 const box = document.createElement('ul');
+box.id = 'suggestions';
 input.after(box);
 
 let timer;
@@ -44,24 +41,36 @@ input.addEventListener('input', () => {
   if (!term) { box.innerHTML = ''; return; }
 
   timer = setTimeout(async () => {
-    const u = new URL(suggestURL);
-    u.searchParams.set('q', term);
-    const r = await fetch(u, { headers: { Authorization: `Token ${token}` } });
-    const s = await r.json();
+    try {
+      const u = new URL(config.suggestURL);
+      u.searchParams.set('q', term);                // keep 'q' for emsuggest
+      // u.searchParams.set('suggest.q', term);     // if your handler expects Solr-style, swap to this
 
-    // Auto‑Suggest response shape: s.suggest[<dictionary>][<term>].suggestions[]
-    const dictObj = s.suggest || {};
-    const firstDict = Object.keys(dictObj)[0];
-    const entry = firstDict ? (dictObj[firstDict][term] || dictObj[firstDict][term.toLowerCase()] || {}) : {};
-    const items = (entry.suggestions || []).map(x => x.term);
+      const r = await fetch(u.toString(), {
+        headers: { Authorization: config.authHeader, Accept: 'application/json' }
+      });
+      if (!r.ok) throw new Error(`Suggest HTTP ${r.status}`);
+      const s = await r.json();
 
-    box.innerHTML = '';
-    items.forEach(text => {
-      const li = document.createElement('li');
-      li.textContent = text;
-      li.onclick = () => { input.value = text; };
-      box.appendChild(li);
-    });
+      // Robust parsing: s.suggest[<dict>][<term>].suggestions[] OR a flat array
+      const dictObj = s.suggest || {};
+      const firstDictVal = Object.values(dictObj)[0] || {};
+      const firstEntryVal = Object.values(firstDictVal)[0] || { suggestions: [] };
+      const rawItems = Array.isArray(s.suggestions) ? s.suggestions : firstEntryVal.suggestions || [];
+
+      const items = rawItems.map(x => (typeof x === 'string' ? x : x.term || x.payload || '')).filter(Boolean);
+
+      box.innerHTML = '';
+      items.forEach(text => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        li.onclick = () => { input.value = text; input.dispatchEvent(new Event('input')); };
+        box.appendChild(li);
+      });
+    } catch (e) {
+      box.innerHTML = ''; // fail closed
+      console.error('Suggest error', e);
+    }
   }, 120);
 });
 </script>
